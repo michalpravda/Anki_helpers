@@ -11,6 +11,7 @@ import zipfile
 from datetime import datetime
 
 from os.path import expanduser
+from random import randint
 
 DIR_HTML = 'html'
 DIR_SOUNDS = 'sounds'
@@ -272,19 +273,19 @@ def zpracuj(adr, a_picture):
 #     sentence = get_sentence(adr, word)
 #     logger.debug('sentence:' + sentence)
 
-    result = word + ';' + gender +';' + img + ';' + sound + ';' \
+    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';' + img + ';' + sound + ';' \
     #nazvy sobouru jsou ve win-1250
     result = result.decode('windows-1250').encode('utf-8') \
              + pronunciation + ';' #+ sentence
     logger.debug('result' + result)
     return result
 
-# def get_sound_filename(adr, a_filename):
-#     ''' vrati nazev souboru s nahravkou, zatim jen mp3'''
-#     logger.debug('function get_sound_filename %s' % a_filename)
-#     result  = os.path.join(adr, DIR_SOUNDS, "".join(a_filename.split('.')[0:-1]) + '.mp3')
-#     logger.debug(result)
-#     return result
+def get_sound_filename(adr, a_filename):
+    ''' vrati nazev souboru s nahravkou, zatim jen mp3'''
+    logger.debug('function get_sound_filename %s' % a_filename)
+    result  = os.path.join(adr, DIR_SOUNDS, "".join(a_filename.split('.')[0:-1]) + '.mp3')
+    logger.debug(result)
+    return result
 
 def zip_log(args, profile_path):
     '''zazipuje log a nahraje jej do adresare anki, odtamtud se synchronizaci dostane ke mne pě při každém pokusu'''
