@@ -1,6 +1,5 @@
 # coding=ISO-8859-2
 import re
-import urllib
 import os
 import sys
 import logging
@@ -66,7 +65,7 @@ def find_text(a_filename, a_regexp, a_not_found):
                 except:
                     logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
                     return a_not_found
-    fd.close
+    fd.close()
     return a_not_found
 
 
@@ -215,7 +214,7 @@ def zpracuj(adr, a_picture):
     # word; picture; sound; pronunciation; example sentence
     # hello; <img src="hello.jpg">; [sound:hello.mp3]; /h??l??/; Hello world!
     logger.debug('function zpracuj: ' + a_picture)
-
+    sound = ''
     word = "".join(a_picture.split('.')[0:-1])
     logger.debug('word ' + str(word))
     img = '<img src="' + a_picture + '">'
@@ -273,7 +272,9 @@ def zpracuj(adr, a_picture):
 #     sentence = get_sentence(adr, word)
 #     logger.debug('sentence:' + sentence)
 
-    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';;' + img + ';' + sound + ';' \
+    ''' note id;word;word class; gender;note;image;sound;pronunciation;sentence '''
+    #todo refactoring to ';'.join[] , beware encoding
+    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';;' + img + ';' + sound + ';'
     #nazvy sobouru jsou ve win-1250
     result = result.decode('windows-1250').encode('utf-8') \
              + pronunciation + ';' #+ sentence
@@ -283,7 +284,7 @@ def zpracuj(adr, a_picture):
 def get_sound_filename(adr, a_filename):
     ''' vrati nazev souboru s nahravkou, zatim jen mp3'''
     logger.debug('function get_sound_filename %s' % a_filename)
-    result  = os.path.join(adr, DIR_SOUNDS, "".join(a_filename.split('.')[0:-1]) + '.mp3')
+    result  = os.path.join(adr, DIR_SOUNDS, a_filename)
     logger.debug(result)
     return result
 
@@ -295,7 +296,7 @@ def zip_log(args, profile_path):
         zipfl = 'log_%s.zip' %datetime.now().strftime('%Y%m%d_%H%M%S')
         with zipfile.ZipFile(zipfl, 'w', zipfile.ZIP_DEFLATED) as myzip:
             myzip.write(LOGFILE)
-        myzip.close
+        myzip.close()
 
         shutil.copy(zipfl, profile_path)
         return None
