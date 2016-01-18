@@ -50,22 +50,23 @@ logger = logging.getLogger()
 
 def find_text(a_filename, a_regexp, a_not_found):
     ''' najde v souboru text regexpem, vrati obsah a_not_found, kdyz nenalezne'''
-    with open(a_filename, 'r') as fd:
-        logger.debug('otevren %s' %a_filename)
-        p = re.compile(a_regexp)
-        for line in fd:
-            m = p.search(line)
-            if m:
-                try:
-                    #logger.debug(str(m))
-                    if m.group(1):
-                        return m.group(1)
-                    else:
+    if os.path.exists(a_filename):
+        with open(a_filename, 'r') as fd:
+            logger.debug('otevren %s' %a_filename)
+            p = re.compile(a_regexp)
+            for line in fd:
+                m = p.search(line)
+                if m:
+                    try:
+                        #logger.debug(str(m))
+                        if m.group(1):
+                            return m.group(1)
+                        else:
+                            return a_not_found
+                    except:
+                        logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
                         return a_not_found
-                except:
-                    logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
-                    return a_not_found
-    fd.close()
+        fd.close()
     return a_not_found
 
 
@@ -213,10 +214,15 @@ def zpracuj(adr, a_picture):
     '''
     # word; picture; sound; pronunciation; example sentence
     # hello; <img src="hello.jpg">; [sound:hello.mp3]; /h??l??/; Hello world!
+    sound_extension = 'mp3'
     logger.debug('function zpracuj: ' + a_picture)
     sound = ''
     word = "".join(a_picture.split('.')[0:-1])
     logger.debug('word ' + str(word))
+    if word.startswith('to '):
+        logger.debug('infinitive - cut "to "')
+        word=word[3:]
+
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
     '''
@@ -239,10 +245,10 @@ def zpracuj(adr, a_picture):
         sound_address = find_text(zdroj_wiki, a_regexp='<a href="(//upload.wik[^ ]*\.ogg)', a_not_found=None)
         if sound_address:
             sound_address = 'https:' + sound_address
-            extension = get_extension(sound_address)
-            sound_file = os.path.join(adr, DIR_SOUNDS, word + '.' + extension)
+            sound_extension = get_extension(sound_address)
+            sound_file = os.path.join(adr, DIR_SOUNDS, word + '.' + sound_extension)
             if stahni(sound_address, sound_file):
-                sound = '[sound:%s.%s]' % (word, extension)
+                sound = '[sound:%s.%s]' % (word, sound_extension)
                 logger.debug('sound:' + sound)
         else:
             #logger.debug('na wiki neni zvuk, stahnu z duden.de')
@@ -279,12 +285,13 @@ def zpracuj(adr, a_picture):
     result = result.decode('windows-1250').encode('utf-8') \
              + pronunciation + ';' #+ sentence
     logger.debug('result' + result)
-    return result
+    logger.debug('sound_extension:' + sound_extension)
+    return result, sound_extension
 
-def get_sound_filename(adr, a_filename):
+def get_sound_filename(adr, a_filename, a_sound_extension):
     ''' vrati nazev souboru s nahravkou, zatim jen mp3'''
-    logger.debug('function get_sound_filename %s' % a_filename)
-    result  = os.path.join(adr, DIR_SOUNDS, a_filename)
+    logger.debug('function get_sound_filename %s, ext:%s' % (a_filename, a_sound_extension))
+    result  = os.path.join(adr, DIR_SOUNDS, "".join(a_filename.split('.')[0:-1])) + '.' + a_sound_extension
     logger.debug(result)
     return result
 
@@ -347,11 +354,12 @@ def main(argv=None):
             logger.debug('filename:' + s)
             if get_extension(s) in ['jpg', 'gif', 'png']:
                 try:
-                    wr.write(zpracuj(adr, s) + '\n')
+                    line, sound_extension = zpracuj(adr, s)
+                    wr.write(line + '\n')
                     logger.debug('zapsano do import filu')
                     shutil.copy(os.path.join(adr, s), profile_path)
                     logger.debug('zkopirovan obrazek do profilu')
-                    sound_fl = get_sound_filename(adr, s)
+                    sound_fl = get_sound_filename(adr, s, sound_extension)
                     logger.debug('zkopiruju ' + sound_fl)
                     if os.path.exists(sound_fl):
                         shutil.copy(sound_fl, profile_path)
