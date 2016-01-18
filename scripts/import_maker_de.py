@@ -273,7 +273,7 @@ def zpracuj(adr, a_picture):
 #     sentence = get_sentence(adr, word)
 #     logger.debug('sentence:' + sentence)
 
-    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';' + img + ';' + sound + ';' \
+    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';;' + img + ';' + sound + ';' \
     #nazvy sobouru jsou ve win-1250
     result = result.decode('windows-1250').encode('utf-8') \
              + pronunciation + ';' #+ sentence
