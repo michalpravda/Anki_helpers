@@ -47,6 +47,7 @@ def process_command_line(argv):
     parser.add_argument("-i", "--input", help="file to be tested - the source of possible new words")
     parser.add_argument("-o", "--output", help="file with results - the words to be learned")
     parser.add_argument("-r", "--ordered", help="Output file is alphabetically sorted", action='store_true')
+    parser.add_argument("-g", "--ignoreCase", help="Case insensitive", action='store_true')
     parser.add_argument("--debug", help='show debug messages', action='store_true')
     parser.add_argument("-p", "--profil", help="Anki profile to be used (pictures and sound will be copied to it's media folder")
 
@@ -62,12 +63,14 @@ def process_command_line(argv):
     return args
 
 
-def get_words(a_line):
+def get_words(a_line, a_alllower):
     '''
     :param a_line: A line of text
     :return: list of all words in it.
     '''
-    result = re.sub('[,.!?]', ' ', a_line).split()
+    result = re.sub('[,).:(!?]', ' ', a_line).split()
+    if a_alllower:
+        result = [x.lower() for x in result]
     return result
 
 def get_basic_state(a_word):
@@ -77,7 +80,7 @@ def get_basic_state(a_word):
     :return:
     '''
 
-def get_words_from_file(a_file):
+def get_words_from_file(a_file, a_alllower):
     '''
     Reads a file, all it's word puts into a set
     :param a_file:
@@ -86,7 +89,7 @@ def get_words_from_file(a_file):
     words = set()
     with open(a_file) as f:
         for line in f:
-            words |= set(get_words(line))
+            words |= set(get_words(line, a_alllower))
     f.close()
     logger.debug('nalezeno %d slov' % len(words))
     return words
@@ -101,12 +104,14 @@ def main(argv=None):
     else:
         logger.setLevel(logging.INFO)
 
-    words_input = get_words_from_file(args.known)
+    words_input = get_words_from_file(args.known, args.ignoreCase)
 
-    words_test = get_words_from_file(args.input)
+    words_test = get_words_from_file(args.input, args.ignoreCase)
+
+
 
     word_tmp = words_test.difference(words_input)
-    logger.debug('nalezeno %d novy slov' %len(word_tmp))
+    logger.debug('nalezeno %d novych slov' %len(word_tmp))
 
     if args.ordered:
         words_output = sorted(word_tmp)
