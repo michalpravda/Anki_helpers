@@ -2,8 +2,10 @@
     Intended usage is to gen known words by exporting them from Anki, get questioned words from a text (scanned book page, a page from Internet etc.)
     and get as a result list of words which are unknown at the moment a should be queued for learning.
 
-    Output file is by default intentionally in random order.
+    Output file is by default not sorted.
     Each word found is presented on one line.
+
+    2.0
     If a questioned word is not in its basic state (infinitive for verbs, singular for nouns etc.) then word with its
     basic state in parenthesis is present)
     If can't determine if a word is in a basic state (e.g. books = many exemplars of a book or a financial record), the script chooses that word is not
@@ -44,9 +46,9 @@ def process_command_line(argv):
     parser.add_argument("-k", "--known", help="file (usually exported from Anki) representing known words")
     parser.add_argument("-i", "--input", help="file to be tested - the source of possible new words")
     parser.add_argument("-o", "--output", help="file with results - the words to be learned")
+    parser.add_argument("-r", "--ordered", help="Output file is alphabetically sorted", action='store_true')
     parser.add_argument("--debug", help='show debug messages', action='store_true')
     parser.add_argument("-p", "--profil", help="Anki profile to be used (pictures and sound will be copied to it's media folder")
-    parser.add_argument("--zip", help='zip logfile and copy it to anki media folder', action='store_true')
 
     args = parser.parse_args()
 
@@ -68,6 +70,28 @@ def get_words(a_line):
     result = re.sub('[,.!?]', ' ', a_line).split()
     return result
 
+def get_basic_state(a_word):
+    '''
+    Gets a basic state of a word (e.g. "books" => "books (book)". It does so by
+    :param a_word:
+    :return:
+    '''
+
+def get_words_from_file(a_file):
+    '''
+    Reads a file, all it's word puts into a set
+    :param a_file:
+    :return: a set with all words in a file
+    '''
+    words = set()
+    with open(a_file) as f:
+        for line in f:
+            words |= set(get_words(line))
+    f.close()
+    logger.debug('nalezeno %d slov' % len(words))
+    return words
+
+
 def main(argv=None):
     ''' entry point of the script '''
     args = process_command_line(argv)
@@ -77,17 +101,20 @@ def main(argv=None):
     else:
         logger.setLevel(logging.INFO)
 
-    words_input = set()
+    words_input = get_words_from_file(args.known)
 
-    with open(args.input) as f:
-        for line in f:
-            words_input |= set(get_words(line))
-    f.close()
+    words_test = get_words_from_file(args.input)
 
-    logger.debug('nalezeno %d slov' % len(words_input))
+    word_tmp = words_test.difference(words_input)
+    logger.debug('nalezeno %d novy slov' %len(word_tmp))
+
+    if args.ordered:
+        words_output = sorted(word_tmp)
+    else:
+        words_output = word_tmp
 
     with open (args.output, 'w') as out:
-        for word in words_input:
+        for word in words_output:
             out.write(word + '\n')
     out.close()
     logger.debug('ulozeno do file')
