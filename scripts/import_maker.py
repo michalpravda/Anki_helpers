@@ -48,22 +48,23 @@ logger = logging.getLogger()
 
 def find_text(a_filename, a_regexp, a_not_found):
     ''' najde v souboru text regexpem, vrati obsah a_not_found, kdyz nenalezne'''
-    with open(a_filename, 'r') as fd:
-        logger.debug('otevren %s' %a_filename)
-        p = re.compile(a_regexp)
-        for line in fd:
-            m = p.search(line)
-            if m:
-                try:
-                    #logger.debug(str(m))
-                    if m.group(1):
-                        return m.group(1)
-                    else:
+    if os.path.exists(a_filename):
+        with open(a_filename, 'r') as fd:
+            logger.debug('otevren %s' %a_filename)
+            p = re.compile(a_regexp)
+            for line in fd:
+                m = p.search(line)
+                if m:
+                    try:
+                        #logger.debug(str(m))
+                        if m.group(1):
+                            return m.group(1)
+                        else:
+                            return a_not_found
+                    except:
+                        logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
                         return a_not_found
-                except:
-                    logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
-                    return a_not_found
-    fd.close
+        fd.close
     return a_not_found
 
 
@@ -110,7 +111,9 @@ def najdi_adresu(adr, a_page, a_word, a_regexp):
                 address = a_page.rstrip('/') + '/' + a_word.lower()
                 logger.debug('adress %s' %address)
                 stahni(address, local_file)
+
     sound_address = find_text(local_file, 'data-src-mp3="([^"]+)"', None)
+
     if sound_address:
         logger.debug('Found sound address - %s' % sound_address)
         return sound_address
@@ -218,6 +221,10 @@ def zpracuj(adr, a_picture):
 
     word = "".join(a_picture.split('.')[0:-1])
     logger.debug('word ' + str(word))
+    if word.startswith('to '):
+        logger.debug('infinitive - cut "to "')
+        word=word[3:]
+
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
     sound = get_sound(adr, word)
