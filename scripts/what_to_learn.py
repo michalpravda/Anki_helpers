@@ -1,3 +1,4 @@
+
 ''' Opens a file representing known (or queued to learn) words and a file containing arbitrary words. Produces a file with words to be learned.
     Intended usage is to gen known words by exporting them from Anki, get questioned words from a text (scanned book page, a page from Internet etc.)
     and get as a result list of words which are unknown at the moment a should be queued for learning.

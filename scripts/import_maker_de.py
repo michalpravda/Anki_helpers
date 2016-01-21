@@ -17,6 +17,11 @@ DIR_SOUNDS = 'sounds'
 DIR_SENTENCES = 'sentences'
 DIR_DONE = 'done'
 
+
+source = {}
+
+
+
 '''
 Takes all picture files from a given directory and for each of them then downloads a sound and IPA transcription
 from the wiktionary. Prepares a txt file with description and filenames for Anki to import.
@@ -54,18 +59,34 @@ def find_text(a_filename, a_regexp, a_not_found):
         with open(a_filename, 'r') as fd:
             logger.debug('otevren %s' %a_filename)
             p = re.compile(a_regexp)
-            for line in fd:
-                m = p.search(line)
-                if m:
-                    try:
-                        #logger.debug(str(m))
-                        if m.group(1):
-                            return m.group(1)
-                        else:
-                            return a_not_found
-                    except:
-                        logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
+
+            # for line in fd:
+            #     m = p.search(line)
+            #     if m:
+            #         try:
+            #             #logger.debug(str(m))
+            #             if m.group(1):
+            #                 return m.group(1)
+            #             else:
+            #                 return a_not_found
+            #         except:
+            #             logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
+            #             return a_not_found
+
+            file_content = fd.read().replace('\n', ' ')
+            m = p.search(file_content)
+            if m:
+                try:
+                    #logger.debug(str(m))
+                    if m.group(1):
+                        return m.group(1)
+                    else:
                         return a_not_found
+                except:
+                    logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
+                    return a_not_found
+
+
         fd.close()
     return a_not_found
 
@@ -256,6 +277,9 @@ def zpracuj(adr, a_picture):
             sound = ''
         pronunciation = find_text(zdroj_wiki, a_regexp='<span class="ipa"[^>]*>([^>]+)</span>', a_not_found='//') #todo  - problemy s kodovanim do souboru
         logger.debug('pronunciation:' + pronunciation)
+        plural =  find_text(zdroj_wiki, a_regexp='Plural.*?Nominativ.*?<td>.*?<td>(.*?)</td>', a_not_found='')
+        if plural:
+            plural = re.sub('<a.*?>|</a>', '', plural)
 
         if word[0] == word.upper()[0]:
             logger.debug('zacina velkym vyparsuju rod')
@@ -268,8 +292,10 @@ def zpracuj(adr, a_picture):
         sound = ''
         pronunciation = '//'
         gender = ''
+        plural = ''
 
-
+    #todo pouzit duden - na plural : re.search('Plural.*?Nominativ.*?<td>.*?<td>([^<]+)<', d).group(1)
+    bonus = ''
     # pronunciation = '//'
 
 #    sound = get_sound(adr, word)
@@ -278,15 +304,16 @@ def zpracuj(adr, a_picture):
 #     sentence = get_sentence(adr, word)
 #     logger.debug('sentence:' + sentence)
 
-    ''' note id;word;word class; gender;note;image;sound;pronunciation;sentence '''
+    ''' note id;word;word class; gender;bonus;image;sound;pronunciation;sentence '''
     #todo refactoring to ';'.join[] , beware encoding
-    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';;' + img + ';' + sound + ';'
+    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';' + plural + ';' + img + ';' + sound + ';'
     #nazvy sobouru jsou ve win-1250
     result = result.decode('windows-1250').encode('utf-8') \
              + pronunciation + ';' #+ sentence
     logger.debug('result' + result)
     logger.debug('sound_extension:' + sound_extension)
     return result, sound_extension
+
 
 def get_sound_filename(adr, a_filename, a_sound_extension):
     ''' vrati nazev souboru s nahravkou, zatim jen mp3'''

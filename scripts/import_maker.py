@@ -165,8 +165,7 @@ def get_pronunciation(adr, a_word):
             pronunciation = find_text(pronunciation_file + '2', '<span class="ipa">([^<]+)</span>', '//')
     return pronunciation
 
-def \
-        get_sentence(adr, a_word):
+def get_sentence(adr, a_word):
     ''' najde pro dane slovo priklad ve vete '''
     logger.debug('get sentence: %s' %a_word)
     ulozena_veta = os.path.join(adr, DIR_SENTENCES, a_word + '.html')
