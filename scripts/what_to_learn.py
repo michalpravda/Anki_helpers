@@ -34,9 +34,27 @@ from datetime import datetime
 from os.path import expanduser
 
 LOGFILE = 'what_to_learn.log'
+DIR_HTML = 'html'
+
+
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(lineno)d: %(message)s', filename=LOGFILE, datefmt='%d.%m.%Y %H:%M:%S%p)')
 logger = logging.getLogger()
 
+
+def stahni (a_co, a_kam):
+    ''' Pokud soubor jeste neexistuje, tak stahne soubor z internetu a ulozi ho pod danym jmenem'''
+    logger.debug('stahni: z %s, do %s' % (a_co, a_kam))
+    if (os.path.exists(a_kam)):
+        logger.debug('jiz stazeno drive')
+    else:
+        testfile = urllib.URLopener()
+        logger.debug('stahnu soubor')
+        try:
+            testfile.retrieve(a_co, a_kam)
+        except:
+            logger.warning('nenalezen soubor na adrese %s' % a_co)
+            return False
+    return True
 
 
 def process_command_line(argv):
@@ -74,12 +92,13 @@ def get_words(a_line, a_alllower):
         result = [x.lower() for x in result]
     return result
 
-def get_basic_state(a_word):
-    '''
-    Gets a basic state of a word (e.g. "books" => "books (book)". It does so by
-    :param a_word:
-    :return:
-    '''
+
+def check_subdirs(a_dir):
+    ''' otestuje, ze existuji pomocne podadresare v danem adresari, pripadne je vytvori '''
+    for dir in [DIR_HTML]:
+        if not os.path.exists(os.path.join(a_dir, dir)):
+            os.mkdir(os.path.join(a_dir, dir))
+
 
 def get_words_from_file(a_file, a_alllower):
     '''
@@ -95,6 +114,77 @@ def get_words_from_file(a_file, a_alllower):
     logger.debug('nalezeno %d slov' % len(words))
     return words
 
+def find_text(a_filename, a_regexp, a_not_found=''):
+    ''' najde v souboru text regexpem, vrati obsah a_not_found, kdyz nenalezne'''
+    if os.path.exists(a_filename):
+        with open(a_filename, 'r') as fd:
+            logger.debug('otevren %s' %a_filename)
+            p = re.compile(a_regexp, re.IGNORECASE)
+            file_content = fd.read()
+            m = p.search(file_content)
+            if m:
+                try:
+                    #logger.debug(str(m))
+                    if m.group(1):
+                        return m.group(1)
+                    else:
+                        return a_not_found
+                except:
+                    logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
+                    return a_not_found
+            else:
+                logger.warning('Nepodarilo se najit %s v souboru %s' % (a_regexp, a_filename))
+
+        fd.close()
+    return a_not_found
+
+def getCanonical(aWord):
+    '''
+    Gets a canonical form of a word (books -> book, ate -> eat)
+    :param aWord: A word to be tested
+    :return: a canonical form of a word
+    '''
+
+    '''
+    download meriam webster page
+    find title
+    '''
+    logger.debug('getCanonical:%s' %aWord)
+    MW = 'http://www.merriam-webster.com/dictionary/'
+    original_address = MW + aWord
+    logger.debug ('original address: %s' %original_address)
+    filename = '%s/%s.html' %(DIR_HTML ,aWord)
+    logger.debug('filename:%s' % filename)
+    if stahni(original_address, filename):
+        real_address = find_text(filename, '"canonical" href="(.*?)"')
+        logger.debug('real_address:%s' %real_address)
+        if real_address!=original_address:
+            logger.debug('probehlo presmerovani na zakladni tvar')
+            canon = find_text(filename, 'definition of (.*?) by merriam-webster')
+            logger.debug('returns:%s' %canon)
+            return canon.lower()
+        else:
+            logger.debug('neprobehlo presmerovani, musim najit link a odvodit z nej nebo se jiz jedna o zakladni tvar')
+
+            definition = find_text(filename, '(simple definition of)')
+            if definition:
+                logger.debug ('obsahuje "simple definition of", tak to je zakladni tvar')
+                canon = aWord
+            else:
+                canon = find_text(filename, '  <div class="card-primary-content"><ol class="definition-list"><li><p class="definition-inner-item"><span> <em>[^\n]*? of[^\n]*?<a[^\n]*?>([^\n]*?)</a>')
+                if (canon):
+                    logger.debug('nasel jsem canonicky tvar')
+                else:
+                    logger.debug('nenasel jsem kanonicky tvar, tak to je zakladni tvar')
+                    canon = aWord
+            logger.debug('returns:%s' %canon)
+            return canon.lower()
+    else:
+        logger.debug('nepodarilo se stahnout stranku, prohlasim vstup za canonical')
+        return aWord
+
+
+
 
 def main(argv=None):
     ''' entry point of the script '''
@@ -109,6 +199,7 @@ def main(argv=None):
 
     words_test = get_words_from_file(args.input, args.ignoreCase)
 
+    check_subdirs('.')
 
 
     word_tmp = words_test.difference(words_input)
@@ -121,7 +212,11 @@ def main(argv=None):
 
     with open (args.output, 'w') as out:
         for word in words_output:
-            out.write(word + '\n')
+            canon = getCanonical(word)
+            if canon.lower() == word.lower():
+                out.write(word + '\n')
+            else:
+                out.write('%s (%s)\n'%(word, canon))
     out.close()
     logger.debug('ulozeno do file')
 
