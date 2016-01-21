@@ -302,7 +302,7 @@ def zpracuj(adr, a_picture):
 #     pronunciation = get_pronunciation(adr, word)
 #     logger.debug('pronunciation:' + pronunciation)
 #     sentence = get_sentence(adr, word)
-#     logger.debug('sentence:' + sentence)
+#     logger.debug('sentence:' + sentence )
 
     ''' note id;word;word class; gender;bonus;image;sound;pronunciation;sentence '''
     #todo refactoring to ';'.join[] , beware encoding
