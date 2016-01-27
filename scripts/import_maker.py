@@ -222,15 +222,18 @@ def zpracuj(adr, a_picture):
     logger.debug('word ' + str(word))
     if word.startswith('to '):
         logger.debug('infinitive - cut "to "')
-        word=word[3:]
+        cword=word[3:]
+    else:
+        logger.debug('not infinitive - word remains unaltered')
+        cword = word
 
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
-    sound = get_sound(adr, word)
+    sound = get_sound(adr, cword)
     logger.debug('sound:' + sound)
-    pronunciation = get_pronunciation(adr, word)
+    pronunciation = get_pronunciation(adr, cword)
     logger.debug('pronunciation:' + pronunciation)
-    sentence = get_sentence(adr, word)
+    sentence = get_sentence(adr, cword)
     logger.debug('sentence:' + sentence)
     result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
     logger.debug('result' + result)
