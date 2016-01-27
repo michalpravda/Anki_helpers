@@ -207,6 +207,36 @@ def check_subdirs(a_dir):
         if not os.path.exists(os.path.join(a_dir, dir)):
             os.mkdir(os.path.join(a_dir, dir))
 
+def to_number(a_word):
+    '''
+    :param a_word: a number literal  - 4
+    :return: a word for number       - four
+    '''
+    switcher = {
+        "0": "zero",
+        "1": "one",
+        "2": "two",
+        "3": "three",
+        "4": "four",
+        "5": "five",
+        "6": "six",
+        "7": "seven",
+        "8": "eight",
+        "9": "nine",
+        "10": "ten",
+        "11": "eleven",
+        "12": "twelve",
+        "13": "thirteen",
+        "14": "fourteen",
+        "15": "fifteen",
+        "16": "sixteen",
+        "17": "seventeen",
+        "18": "eightteen",
+        "19": "nineteen",
+        "20": "twenty"
+
+    }
+    return switcher.get(a_word, a_word)
 
 def zpracuj(adr, a_picture):
     ''' stahne k danemu obrazku co nejvice doplnujicich informaci (zvuk, vyslovnost),
@@ -219,6 +249,8 @@ def zpracuj(adr, a_picture):
     logger.debug('function zpracuj: ' + a_picture)
 
     word = "".join(a_picture.split('.')[0:-1])
+    word = to_number(word)
+
     logger.debug('word ' + str(word))
     if word.startswith('to '):
         logger.debug('infinitive - cut "to "')
