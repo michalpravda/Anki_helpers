@@ -227,6 +227,13 @@ def get_gender(a_gender):
         return 'das'
     return None
 
+def dec(a_string):
+    '''
+    :param a_string: string k dekodovani z win1250
+    :return: string v utf8
+    '''
+    return a_string.decode('windows-1250').encode('utf-8')
+
 def zpracuj(adr, a_picture):
     ''' stahne k danemu obrazku co nejvice doplnujicich informaci (zvuk, vyslovnost),
     zkopiruje media do anki folderu
@@ -306,10 +313,11 @@ def zpracuj(adr, a_picture):
 
     ''' note id;word;word class; gender;bonus;image;sound;pronunciation;sentence '''
     #todo refactoring to ';'.join[] , beware encoding
-    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';' + plural + ';' + img + ';' + sound + ';'
+    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';'
+    result = dec(result)
+    result = result + plural + ';' + dec(img) + ';' + dec(sound) + ';'
     #nazvy sobouru jsou ve win-1250
-    result = result.decode('windows-1250').encode('utf-8') \
-             + pronunciation + ';' #+ sentence
+    result = result + pronunciation + ';' #+ sentence
     logger.debug('result' + result)
     logger.debug('sound_extension:' + sound_extension)
     return result, sound_extension
