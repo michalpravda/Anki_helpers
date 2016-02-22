@@ -57,7 +57,7 @@ def find_text(a_filename, a_regexp, a_not_found):
     ''' najde v souboru text regexpem, vrati obsah a_not_found, kdyz nenalezne'''
     if os.path.exists(a_filename):
         with open(a_filename, 'r') as fd:
-            logger.debug('otevren %s' %a_filename)
+            logger.debug('otevren %s, hledam "%s"' %(a_filename, a_regexp))
             p = re.compile(a_regexp)
 
             # for line in fd:
@@ -215,7 +215,7 @@ def quickfix(a_string):
     ''' nahrazuje non ascii znaky jejich %BC'''
     ''' to by se melo udelat nejakou systemovou fci, ale nerozumim tomu z filesystemu se to nejak nacte jinak nez z console
         udelam tedy rucni preklad üäïß na patřičné procentové entity - todo'''
-    return a_string.replace(chr(252),'%C3%BC').replace(chr(228), '%C3%A4').replace(chr(246), '%C3%B6').replace(chr(223), '%C3%9F').replace(chr(196), '%C3%84').replace(chr(79), '%C3%8F').replace(chr(220), '%C3%9C')
+    return a_string.replace(chr(252),'%C3%BC').replace(chr(228), '%C3%A4').replace(chr(246), '%C3%B6').replace(chr(223), '%C3%9F').replace(chr(196), '%C3%84').replace(chr(220), '%C3%9C')
 
 def get_gender(a_gender):
     ''' vrati gender ve forme der/die/das'''
@@ -232,7 +232,7 @@ def dec(a_string):
     :param a_string: string k dekodovani z win1250
     :return: string v utf8
     '''
-    return a_string.decode('windows-1250').encode('utf-8')
+    return a_string.decode('mbcs').encode('utf-8')
 
 def zpracuj(adr, a_picture):
     ''' stahne k danemu obrazku co nejvice doplnujicich informaci (zvuk, vyslovnost),
@@ -246,10 +246,9 @@ def zpracuj(adr, a_picture):
     logger.debug('function zpracuj: ' + a_picture)
     sound = ''
     word = "".join(a_picture.split('.')[0:-1])
+    u_word = word.decode(sys.getfilesystemencoding())
     logger.debug('word ' + str(word))
-    if word.startswith('to '):
-        logger.debug('infinitive - cut "to "')
-        word=word[3:]
+    logger.debug('u_word' + u_word)
 
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
@@ -288,10 +287,10 @@ def zpracuj(adr, a_picture):
         if plural:
             plural = re.sub('<a.*?>|</a>', '', plural)
 
-        if word[0] == word.upper()[0]:
-            logger.debug('zacina velkym vyparsuju rod')
+        if word[0].isupper():
             gender = get_gender(find_text(zdroj_wiki, a_regexp='Genus: ([a-zA-Z]*)', a_not_found=None))
         else:
+            logger.debug('nezacina velkym vyparsuju rod')
             gender = ''
 
     else:
@@ -313,11 +312,19 @@ def zpracuj(adr, a_picture):
 
     ''' note id;word;word class; gender;bonus;image;sound;pronunciation;sentence '''
     #todo refactoring to ';'.join[] , beware encoding
-    result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';'
-    result = dec(result)
-    result = result + plural + ';' + dec(img) + ';' + dec(sound) + ';'
+    # result = str(randint(1, 10000000000000)) + ';' + word + ';;' + gender +';'
+    # result = dec(result)
+    # result = result + plural + ';' + dec(img) + ';' + dec(sound) + ';'
+    # #nazvy sobouru jsou ve win-1250
+    # result = result + pronunciation + ';' #+ sentence
+
+    result = str(randint(1, 10000000000000)) + ';' + u_word + ';;' + gender.decode('utf-8') +';'
+    # result = dec(result)
+    result = result + plural.decode('utf-8') + ';' + img.decode(sys.getfilesystemencoding()) + ';' + sound.decode(sys.getfilesystemencoding()) + ';'
     #nazvy sobouru jsou ve win-1250
-    result = result + pronunciation + ';' #+ sentence
+    result = result + pronunciation.decode('utf-8') + ';' #+ sentence
+
+    result= result.encode('utf-8')
     logger.debug('result' + result)
     logger.debug('sound_extension:' + sound_extension)
     return result, sound_extension
