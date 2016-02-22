@@ -287,10 +287,10 @@ def zpracuj(adr, a_picture):
         if plural:
             plural = re.sub('<a.*?>|</a>', '', plural)
 
-        if word[0].isupper():
+        if u_word[0].isupper():
             gender = get_gender(find_text(zdroj_wiki, a_regexp='Genus: ([a-zA-Z]*)', a_not_found=None))
         else:
-            logger.debug('nezacina velkym vyparsuju rod')
+            logger.debug('nezacina velkym neparsuju rod')
             gender = ''
 
     else:
