@@ -262,6 +262,7 @@ def zpracuj(adr, a_picture):
     if word.startswith('to '):
         logger.debug('infinitive - cut "to "')
         cword=word[3:]
+        word = '(to) ' + word[3:]
     else:
         logger.debug('not infinitive - word remains unaltered')
         cword = word
