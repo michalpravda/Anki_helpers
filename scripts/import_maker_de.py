@@ -283,15 +283,20 @@ def zpracuj(adr, a_picture):
             sound = ''
         pronunciation = find_text(zdroj_wiki, a_regexp='<span class="ipa"[^>]*>([^>]+)</span>', a_not_found='//') #todo  - problemy s kodovanim do souboru
         logger.debug('pronunciation:' + pronunciation)
-        plural =  find_text(zdroj_wiki, a_regexp='Plural.*?Nominativ.*?<td>.*?<td>(.*?)</td>', a_not_found='')
-        if plural:
-            plural = re.sub('<a.*?>|</a>', '', plural)
 
         if u_word[0].isupper():
             gender = get_gender(find_text(zdroj_wiki, a_regexp='Genus: ([a-zA-Z]*)', a_not_found=None))
+            logger.debug('jde o podstatne jmeno hledam plural')
+            plural =  find_text(zdroj_wiki, a_regexp='Plural.*?Nominativ.*?<td>.*?<td>(.*?)</td>', a_not_found='')
+            logger.debug(plural)
+            if plural:
+                plural = re.sub('<a.*?>|</a>', '', plural)
+                logger.debug(plural)
+
         else:
             logger.debug('nezacina velkym neparsuju rod')
             gender = ''
+            plural = ''
 
     else:
         logger.warning('na wiki neni slovo')
