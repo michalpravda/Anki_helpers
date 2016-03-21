@@ -225,7 +225,7 @@ def get_gender(a_gender):
         return 'die'
     elif a_gender == 'Neutrum':
         return 'das'
-    return None
+    return ''
 
 def dec(a_string):
     '''
@@ -285,14 +285,16 @@ def zpracuj(adr, a_picture):
         logger.debug('pronunciation:' + pronunciation)
 
         if u_word[0].isupper():
-            gender = get_gender(find_text(zdroj_wiki, a_regexp='Genus: ([a-zA-Z]*)', a_not_found=None))
+            gender = get_gender(find_text(zdroj_wiki, a_regexp='Genus: ([a-zA-Z]*)', a_not_found=''))
             logger.debug('jde o podstatne jmeno hledam plural')
             plural =  find_text(zdroj_wiki, a_regexp='Plural.*?Nominativ.*?<td>.*?<td>(.*?)</td>', a_not_found='')
             logger.debug(plural)
             if plural:
                 plural = re.sub('<a.*?>|</a>', '', plural)
                 logger.debug(plural)
-
+            else:
+                logger.warning('nenasel jsem plural')
+                plural = ' '
         else:
             logger.debug('nezacina velkym neparsuju rod')
             gender = ''
@@ -322,12 +324,15 @@ def zpracuj(adr, a_picture):
     # result = result + plural + ';' + dec(img) + ';' + dec(sound) + ';'
     # #nazvy sobouru jsou ve win-1250
     # result = result + pronunciation + ';' #+ sentence
-
+    logger.debug('tvorim result 1')
     result = str(randint(1, 10000000000000)) + ';' + u_word + ';;' + gender.decode('utf-8') +';'
     # result = dec(result)
+    logger.debug('tvorim result 2')
     result = result + plural.decode('utf-8') + ';' + img.decode(sys.getfilesystemencoding()) + ';' + sound.decode(sys.getfilesystemencoding()) + ';'
     #nazvy sobouru jsou ve win-1250
+    logger.debug('tvorim result 3')
     result = result + pronunciation.decode('utf-8') + ';' #+ sentence
+    logger.debug('tvorim result 4')
 
     result= result.encode('utf-8')
     logger.debug('result' + result)
