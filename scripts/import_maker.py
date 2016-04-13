@@ -39,6 +39,14 @@ Projdi adresar
         uloz do archivu
 uloz vysledek
 uklid
+
+kazdy field se da naplnit posloupnosti
+    stahni
+    najdi
+
+    obrazek a zvuk se navic musi nakopirovat do anki media folderu
+
+
 '''
 LOGFILE = 'import.log'
 
@@ -46,9 +54,22 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(lin
 logger = logging.getLogger()
 
 
+def do(a_list):
+    '''
+    :param a_list: Does actions from a list in order
+    :return: returns result of the last one
+    '''
+
+    for l_action in a_list:
+        logger.debug('doing : %s' %str(l_action))
+        l_action
+
+
 def find_text(a_filename, a_regexp, a_not_found):
     ''' najde v souboru text regexpem, vrati obsah a_not_found, kdyz nenalezne'''
+    logger.debug('find_text(%s, %s, %s)' %(a_filename, a_regexp, a_not_found))
     if os.path.exists(a_filename):
+        logger.debug('soubor existuje')
         with open(a_filename, 'r') as fd:
             logger.debug('otevren %s' %a_filename)
             p = re.compile(a_regexp)
@@ -58,6 +79,7 @@ def find_text(a_filename, a_regexp, a_not_found):
                     try:
                         #logger.debug(str(m))
                         if m.group(1):
+                            logger.debug('nalezeno %s' %(m.group(1)))
                             return m.group(1)
                         else:
                             return a_not_found
@@ -65,6 +87,8 @@ def find_text(a_filename, a_regexp, a_not_found):
                         logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
                         return a_not_found
         fd.close
+    else:
+        logger.debug('soubor %s neexistuje' %a_filename)
     return a_not_found
 
 
@@ -83,6 +107,7 @@ def get_extension(a_filename):
     logger.debug('returns:' + ext)
     return ext
 
+
 def stahni (a_co, a_kam):
     ''' Pokud soubor jeste neexistuje, tak stahne soubor z internetu a ulozi ho pod danym jmenem'''
     logger.debug('stahni: z %s, do %s' % (a_co, a_kam))
@@ -98,6 +123,7 @@ def stahni (a_co, a_kam):
             return False
     return True
 
+
 def najdi_adresu(adr, a_page, a_word, a_regexp):
     ''' finds a link in a page using a regexp. Looks for exact word first and if the page is not found then tries a_word.lower as part of the address '''
     address = a_page.rstrip('/') + '/' + a_word
@@ -112,7 +138,7 @@ def najdi_adresu(adr, a_page, a_word, a_regexp):
                 logger.debug('adress %s' %address)
                 stahni(address, local_file)
 
-    sound_address = find_text(local_file, 'data-src-mp3="([^"]+)"', None)
+    sound_address = find_text(local_file, a_regexp, None)
 
     if sound_address:
         logger.debug('Found sound address - %s' % sound_address)
@@ -131,18 +157,18 @@ def get_sound(adr, a_word):
     logger.debug('get_sound:%s %s' %(adr ,a_word))
     sound_file =  os.path.join (adr, DIR_SOUNDS, a_word + '.mp3')
     logger.debug ('sound_file: %s' % sound_file)
-    sound_address = "https://ssl.gstatic.com/dictionary/static/sounds/de/0/" + a_word.lower() + ".mp3"
+    # sound_address = "https://ssl.gstatic.com/dictionary/static/sounds/de/0/" + a_word.lower() + ".mp3"
+    # if stahni (sound_address, sound_file):
+    #     logger.debug('stahnul jsem z googlu')
+    #     return '[sound:%s.mp3]' % a_word
+    # else:
+    logger.debug('zkusim stahnout zvuk odjinud')
+    sound_address = najdi_adresu(adr, 'http://dictionary.cambridge.org/us/dictionary/english/', a_word, 'data-src-mp3="([^"]+)"')
     if stahni (sound_address, sound_file):
-        logger.debug('stahnul jsem z googlu')
-        return '[sound:%s.mp3]' % a_word
-    else:
-        logger.debug('zkusim stahnout zvuk odjinud')
-        sound_address = najdi_adresu(adr, 'http://dictionary.cambridge.org/us/dictionary/english/', a_word, 'data-src-mp3="([^"]+)"')
-        if stahni (sound_address, sound_file):
-            logger.debug('stahnul jsem z odjinud')
-            l_result = '[sound:%s.mp3]' % a_word
-            logger.debug(l_result)
-            return l_result
+        logger.debug('stahnul jsem z odjinud')
+        l_result = '[sound:%s.mp3]' % a_word
+        logger.debug(l_result)
+        return l_result
     return ''
 
 def get_pronunciation(adr, a_word):
@@ -244,6 +270,7 @@ def to_number(a_word):
         "100": "hundred",
     }
     return switcher.get(a_word, a_word)
+
 
 def zpracuj(adr, a_picture):
     ''' stahne k danemu obrazku co nejvice doplnujicich informaci (zvuk, vyslovnost),
