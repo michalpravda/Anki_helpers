@@ -2,6 +2,9 @@
 from PyQt4 import QtCore, QtGui
 import logging
 
+logging.basicConfig(level=logging.DEBUG, format='%(lineno)d: %(message)s')
+logger = logging.getLogger()
+
 class KlicoveSlovo(QtGui.QWidget):
     def __init__(self, parent=None):
         super(KlicoveSlovo, self).__init__(parent)
@@ -10,24 +13,32 @@ class KlicoveSlovo(QtGui.QWidget):
         self.nameLine = QtGui.QLineEdit()
         addressLabel = QtGui.QLabel("Možnosti:".decode('windows-1250'))
         self.addressText = QtGui.QTextEdit()
-
+        self.hledejUprostred = QtGui.QCheckBox('hledat i uprostøed slov'.decode('windows-1250'))
 
 
         mainLayout = QtGui.QGridLayout()
         mainLayout.addWidget(nameLabel, 0, 0)
         mainLayout.addWidget(self.nameLine, 0, 1)
-        mainLayout.addWidget(addressLabel, 1, 0, QtCore.Qt.AlignTop)
-        mainLayout.addWidget(self.addressText, 1, 1)
+        mainLayout.addWidget(self.hledejUprostred, 1, 0)
+        mainLayout.addWidget(addressLabel, 2, 0, QtCore.Qt.AlignTop)
+        mainLayout.addWidget(self.addressText, 2, 1)
 
         self.setLayout(mainLayout)
         self.setWindowTitle("Klíèové slovo".decode('windows-1250'))
 
         self.connect(self.nameLine, QtCore.SIGNAL("textChanged(QString)"),
                      self.text_changed)
+
+
     def text_changed(self):
         pattern = unicode(self.nameLine.text())
+        logger.debug('pattern:%s' %pattern)
+        # logger.debug(self.hledejUprostred.isChecked())
         if len(pattern) >= 1:
-            self.new_list = [item for item in vse if item.find(pattern) == 0]
+            if (self.hledejUprostred.isChecked()):
+                self.new_list = [item for item in vse if pattern in item]
+            else:
+                self.new_list = [item for item in vse if item.startswith(pattern)]
             self.addressText.setText('\n'.join(self.new_list))
 
 

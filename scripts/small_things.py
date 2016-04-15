@@ -32,7 +32,7 @@ def define_words(a_list):
         - word, type of word, example usage
     '''
     a_result = []
-    with open('words.txt', 'w') as out_file:
+    with open('words_wiki_500.txt', 'w') as out_file:
         for word in a_list:
             '''stahni stranku z cambridge
                najdi jednotlive casti pomoci regexpu
@@ -45,12 +45,12 @@ def define_words(a_list):
             utils.download(get_page(clean_word), get_file_name(clean_word), logger)
 
             word_type = utils.get_info(get_file_name(clean_word), 'span class="headword">.*?%s.*?span class="pos".*?>(.*?)<' %clean_word, logger)
-            out_line = '%s; %s\n' % (clean_word, word_type)
+            out_line = '%s\t%s\n' % (clean_word, word_type)
             logger.debug(out_line)
             out_file.write(out_line)
     out_file.close()
 
 logger.debug('small things begin')
 #define_words(['the', 'hello'])
-with open('frek1_clean.txt', 'r') as test_file:
+with open('wiki_500.txt', 'r') as test_file:
     define_words(test_file)
