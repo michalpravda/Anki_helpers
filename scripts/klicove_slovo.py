@@ -7,6 +7,7 @@ logger = logging.getLogger()
 
 class KlicoveSlovo(QtGui.QWidget):
     def __init__(self, parent=None):
+        logger.debug('init>')
         super(KlicoveSlovo, self).__init__(parent)
 
         nameLabel = QtGui.QLabel("Fragment:")
@@ -14,6 +15,9 @@ class KlicoveSlovo(QtGui.QWidget):
         addressLabel = QtGui.QLabel("Možnosti:".decode('windows-1250'))
         self.addressText = QtGui.QTextEdit()
         self.hledejUprostred = QtGui.QCheckBox('hledat i uprostøed slov'.decode('windows-1250'))
+
+        self.input = self.nameLine
+        self.input.returnPressed.connect(self.setSelected)
 
 
         mainLayout = QtGui.QGridLayout()
@@ -29,6 +33,9 @@ class KlicoveSlovo(QtGui.QWidget):
         self.connect(self.nameLine, QtCore.SIGNAL("textChanged(QString)"),
                      self.text_changed)
 
+    def setSelected(self):
+        logger.debug('setSelected>')
+        self.nameLine.selectAll()
 
     def text_changed(self):
         pattern = unicode(self.nameLine.text())
