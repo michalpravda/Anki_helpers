@@ -15,15 +15,16 @@ class KlicoveSlovo(QtGui.QWidget):
         addressLabel = QtGui.QLabel("Možnosti:".decode('windows-1250'))
         self.addressText = QtGui.QTextEdit()
         self.hledejUprostred = QtGui.QCheckBox('hledat i uprostøed slov'.decode('windows-1250'))
+        self.ignorujDiakritiku = QtGui.QCheckBox('ignorovat diakritiku'.decode('windows-1250'))
+
 
         self.input = self.nameLine
         self.input.returnPressed.connect(self.setSelected)
-
-
         mainLayout = QtGui.QGridLayout()
         mainLayout.addWidget(nameLabel, 0, 0)
         mainLayout.addWidget(self.nameLine, 0, 1)
         mainLayout.addWidget(self.hledejUprostred, 1, 0)
+        mainLayout.addWidget(self.ignorujDiakritiku, 1, 1)
         mainLayout.addWidget(addressLabel, 2, 0, QtCore.Qt.AlignTop)
         mainLayout.addWidget(self.addressText, 2, 1)
 
@@ -41,17 +42,32 @@ class KlicoveSlovo(QtGui.QWidget):
         pattern = unicode(self.nameLine.text())
         logger.debug('pattern:%s' %pattern)
         # logger.debug(self.hledejUprostred.isChecked())
+        if self.ignorujDiakritiku.isChecked():
+            pattern = strip_accents(pattern)
+            logger.debug('pattern:%s' %pattern)
+
         if len(pattern) >= 1:
-            if (self.hledejUprostred.isChecked()):
-                self.new_list = [item for item in vse if pattern in item]
+            if self.hledejUprostred.isChecked():
+                if self.ignorujDiakritiku.isChecked():
+                    self.new_list = [item for item in vse_diafree if pattern in strip_accents(item)]
+                else:
+                    self.new_list = [item for item in vse if pattern in item]
             else:
-                self.new_list = [item for item in vse if item.startswith(pattern)]
+                if self.ignorujDiakritiku.isChecked():
+                    self.new_list = [item for item in vse_diafree if item.startswith(pattern)]
+                else:
+                    self.new_list = [item for item in vse if item.startswith(pattern)]
             self.addressText.setText('\n'.join(self.new_list))
 
+import unicodedata
+def strip_accents(s):
+   return ''.join(c for c in unicodedata.normalize('NFD', s)
+                  if unicodedata.category(c) != 'Mn')
 
 with open('syn2010_lemma_abc.txt', 'r') as in_file:
     vse = in_file.readlines()
     vse = [slovo.split('\t')[1].decode('windows-1250') for slovo in vse]
+    vse_diafree = [strip_accents(item) for item in vse]
 in_file.close()
 
 if __name__ == '__main__':
