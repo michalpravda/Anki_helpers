@@ -157,18 +157,12 @@ def get_sound(adr, a_word):
     logger.debug('get_sound:%s %s' %(adr ,a_word))
     sound_file =  os.path.join (adr, DIR_SOUNDS, a_word + '.mp3')
     logger.debug ('sound_file: %s' % sound_file)
-    # sound_address = "https://ssl.gstatic.com/dictionary/static/sounds/de/0/" + a_word.lower() + ".mp3"
-    # if stahni (sound_address, sound_file):
-    #     logger.debug('stahnul jsem z googlu')
-    #     return '[sound:%s.mp3]' % a_word
-    # else:
-    logger.debug('zkusim stahnout zvuk odjinud')
     sound_address = najdi_adresu(adr, 'http://dictionary.cambridge.org/us/dictionary/english/', a_word, 'data-src-mp3="([^"]+)"')
     if stahni (sound_address, sound_file):
         logger.debug('stahnul jsem z odjinud')
         l_result = '[sound:%s.mp3]' % a_word
         logger.debug(l_result)
-        return l_result
+        return l_result, sound_file
     return ''
 
 def get_pronunciation(adr, a_word):
@@ -272,7 +266,7 @@ def to_number(a_word):
     return switcher.get(a_word, a_word)
 
 
-def zpracuj(adr, a_picture):
+def zpracuj(adr, a_picture, a_profile_path):
     ''' stahne k danemu obrazku co nejvice doplnujicich informaci (zvuk, vyslovnost),
     zkopiruje media do anki folderu
     vrati radek k importu do anki.
@@ -296,7 +290,7 @@ def zpracuj(adr, a_picture):
 
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
-    sound = get_sound(adr, cword)
+    sound, sound_filename = get_sound(adr, cword)
     logger.debug('sound:' + sound)
     pronunciation = get_pronunciation(adr, cword)
     logger.debug('pronunciation:' + pronunciation)
@@ -304,14 +298,21 @@ def zpracuj(adr, a_picture):
     logger.debug('sentence:' + sentence)
     result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
     logger.debug('result' + result)
+
+    shutil.copy(os.path.join(adr, a_picture), a_profile_path)
+    logger.debug('zkopirovan obrazek do profilu')
+
+    logger.debug('zkopiruju ' + sound_filename)
+    if os.path.exists(sound_filename):
+        shutil.copy(sound_filename, a_profile_path)
+    else:
+        logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
+    done_path = os.path.join(adr, DIR_DONE, a_picture)
+    logger.debug('done:' + done_path)
+    shutil.move(os.path.join(adr, a_picture), done_path)
+
     return result
 
-def get_sound_filename(adr, a_filename):
-    ''' vrati nazev souboru s nahravkou, zatim jen mp3'''
-    logger.debug('function get_sound_filename %s' % a_filename)
-    result  = os.path.join(adr, DIR_SOUNDS, "".join(a_filename.split('.')[0:-1]) + '.mp3')
-    logger.debug(result)
-    return result
 
 def zip_log(args, profile_path):
     '''zazipuje log a nahraje jej do adresare anki, odtamtud se synchronizaci dostane ke mne pì pøi ka¾dém pokusu'''
@@ -340,11 +341,6 @@ def process_command_line(argv):
 
     logger.debug('vstupni argumenty')
     logger.debug(args)
-
-    #    if not (args.changelistfrom or args.date):
-    #     if len(sys.argv)==1:
-    #         parser.print_help()
-    #         sys.exit(1)    #logger.debug('parsed args')
     return args
 
 
@@ -372,19 +368,8 @@ def main(argv=None):
             logger.debug('filename:' + s)
             if get_extension(s) in ['jpg', 'gif', 'png']:
                 try:
-                    wr.write(zpracuj(adr, s) + '\n')
+                    wr.write(zpracuj(adr, s, profile_path) + '\n')
                     logger.debug('zapsano do import filu')
-                    shutil.copy(os.path.join(adr, s), profile_path)
-                    logger.debug('zkopirovan obrazek do profilu')
-                    sound_fl = get_sound_filename(adr, s)
-                    logger.debug('zkopiruju ' + sound_fl)
-                    if os.path.exists(sound_fl):
-                        shutil.copy(sound_fl, profile_path)
-                    else:
-                        logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
-                    done_path = os.path.join(adr, DIR_DONE, s)
-                    logger.debug('done:' + done_path)
-                    shutil.move(os.path.join(adr, s), done_path)
                     logger.info('zpracovano: %s' %s)
                 except:
                     # print (s.ljust(20) + get_phonetic_pronunciation(s))
