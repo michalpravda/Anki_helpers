@@ -1,4 +1,5 @@
 # coding=ISO-8859-2
+
 import re
 import os
 import sys
@@ -54,17 +55,6 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(lin
 logger = logging.getLogger()
 
 
-def do(a_list):
-    '''
-    :param a_list: Does actions from a list in order
-    :return: returns result of the last one
-    '''
-
-    for l_action in a_list:
-        logger.debug('doing : %s' %str(l_action))
-        l_action
-
-
 def find_text(a_filename, a_regexp, a_not_found):
     ''' najde v souboru text regexpem, vrati obsah a_not_found, kdyz nenalezne'''
     logger.debug('find_text(%s, %s, %s)' %(a_filename, a_regexp, a_not_found))
@@ -86,15 +76,10 @@ def find_text(a_filename, a_regexp, a_not_found):
                     except:
                         logger.warning('Nepodarilo se najit %s v souboru %s - %s' % (a_regexp, a_filename, str(sys.exc_info()[0])))
                         return a_not_found
-        fd.close
+        fd.close()
     else:
         logger.debug('soubor %s neexistuje' %a_filename)
     return a_not_found
-
-
-def get_phonetic_pronunciation(a_filename):
-    logger.debug('function get_phonetic_pronunciation:' + a_filename)
-    return find_text(a_filename, '<span class="IPA" [^>]+>/([^/]*)/</sp', '//')
 
 
 def get_extension(a_filename):
@@ -148,8 +133,6 @@ def najdi_adresu(adr, a_page, a_word, a_regexp):
         return None
 
 
-
-
 def get_sound(adr, a_word):
     ''' najde pro dane slovo nahravku
         nejdrive jiz existujici nahravku v adresari, jinak zkusi stahnout z googlu a pak z wiktionary
@@ -163,7 +146,7 @@ def get_sound(adr, a_word):
         l_result = '[sound:%s.mp3]' % a_word
         logger.debug(l_result)
         return l_result, sound_file
-    return ''
+    return '', ''
 
 def get_pronunciation(adr, a_word):
     ''' najde pro dane slovo vyslovnost
@@ -175,7 +158,7 @@ def get_pronunciation(adr, a_word):
     pronunciation_file = os.path.join(adr, DIR_HTML, a_word + '.html')
     logger.debug('pronunciation_file: %s' % pronunciation_file)
     if stahni("https://en.wiktionary.org/wiki/" + a_word.lower(), pronunciation_file):
-        pronunciation = get_phonetic_pronunciation(pronunciation_file)
+        pronunciation = find_text(pronunciation_file, '<span class="IPA" [^>]+>/([^/]*)/</sp', '//')
     else:
         pronunciation = '//'
 
@@ -287,7 +270,32 @@ def zpracuj(adr, a_picture, a_profile_path):
     else:
         logger.debug('not infinitive - word remains unaltered')
         cword = word
+    '''
+    img = '<img src="' + a_picture + '">'
+    logger.debug('img' + img)
+    sound, sound_filename = get_sound(adr, cword)
+    logger.debug('sound:' + sound)
+    pronunciation = get_pronunciation(adr, cword)
+    logger.debug('pronunciation:' + pronunciation)
+    sentence = get_sentence(adr, cword)
+    logger.debug('sentence:' + sentence)
+    result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
+    logger.debug('result' + result)
 
+    shutil.copy(os.path.join(adr, a_picture), a_profile_path)
+    logger.debug('zkopirovan obrazek do profilu')
+
+    logger.debug('zkopiruju ' + sound_filename)
+    if os.path.exists(sound_filename):
+        shutil.copy(sound_filename, a_profile_path)
+    else:
+        logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
+    done_path = os.path.join(adr, DIR_DONE, a_picture)
+    logger.debug('done:' + done_path)
+    shutil.move(os.path.join(adr, a_picture), done_path)
+
+    return result
+'''
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
     sound, sound_filename = get_sound(adr, cword)
@@ -322,7 +330,7 @@ def zip_log(args, profile_path):
         zipfl = 'log_%s.zip' %datetime.now().strftime('%Y%m%d_%H%M%S')
         with zipfile.ZipFile(zipfl, 'w', zipfile.ZIP_DEFLATED) as myzip:
             myzip.write(LOGFILE)
-        myzip.close
+        myzip.close()
 
         shutil.copy(zipfl, profile_path)
         return None
@@ -352,18 +360,12 @@ def main(argv=None):
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
-
     adr = args.directory
-
     check_subdirs(adr)
 
     profile_path = os.path.join(ankiDir, args.profil, 'collection.media')
     logger.debug('profile_path:' + profile_path)
     with open(adr + '/import.txt', 'w') as wr:
-        # for adres, podadr, soubory in os.walk(adr):
-        # for soubory in
-            #pro kazdy soubor
-            # print (adres)
         for s in os.listdir(adr):
             logger.debug('filename:' + s)
             if get_extension(s) in ['jpg', 'gif', 'png']:
@@ -372,8 +374,6 @@ def main(argv=None):
                     logger.debug('zapsano do import filu')
                     logger.info('zpracovano: %s' %s)
                 except:
-                    # print (s.ljust(20) + get_phonetic_pronunciation(s))
-                    # wr.write(s.ljust(20) + '/' + get_phonetic_pronunciation(s) + '/\n')
                     logger.warn(s + ' ' + str(sys.exc_info()))
                     raise
     wr.close()
