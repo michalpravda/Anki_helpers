@@ -11,6 +11,7 @@ import zipfile
 from datetime import datetime
 
 from os.path import expanduser
+import htmlentitydefs
 
 DIR_HTML = 'html'
 DIR_SOUNDS = 'sounds'
@@ -268,6 +269,9 @@ def zpracuj(adr, a_picture, a_profile_path):
         logger.debug('sound:' + sound)
         pronunciation = find_text(html_file, "<span class='lex_ful_pron'>(.*?)</span>", '//')
         logger.debug('pronunciation:' + pronunciation)
+        pronunciation = unescape(pronunciation.strip(' []'))
+        logger.debug('new pronunciation:' + pronunciation)
+        #sys.exit(0)
 
         sentence = get_sentence(adr, cword)
         logger.debug('sentence:' + sentence)
@@ -291,6 +295,27 @@ def zpracuj(adr, a_picture, a_profile_path):
     logger.debug('nepodarilo se najit ve slovniku')
     return None
 
+#http://effbot.org/zone/re-sub.htm#unescape-html
+def unescape(text):
+    def fixup(m):
+        text = m.group(0)
+        if text[:2] == "&#":
+            # character reference
+            try:
+                if text[:3] == "&#x":
+                    return unichr(int(text[3:-1], 16))
+                else:
+                    return unichr(int(text[2:-1]))
+            except ValueError:
+                pass
+        else:
+            # named entity
+            try:
+                text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+            except KeyError:
+                pass
+        return text # leave as is
+    return re.sub("&#?\w+;", fixup, text)
 
 def zip_log(args, profile_path):
     '''zazipuje log a nahraje jej do adresare anki, odtamtud se synchronizaci dostane ke mne pì pøi ka¾dém pokusu'''
@@ -340,7 +365,7 @@ def main(argv=None):
             logger.debug('filename:' + s)
             if get_extension(s) in ['jpg', 'gif', 'png']:
                 try:
-                    wr.write(zpracuj(adr, s, profile_path) + '\n')
+                    wr.write(zpracuj(adr, s, profile_path).encode('utf-8') + '\n')
                     logger.debug('zapsano do import filu')
                     logger.info('zpracovano: %s' %s)
                 except:
