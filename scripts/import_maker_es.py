@@ -25,28 +25,6 @@ ankiDir = os.path.join(userHomeDir, 'Documents', 'Anki')  #c:\users\majkl\Docume
 
 
 
-'''
-Projdi adresar
-    pro kazdy obrazek (png nebo jpg)
-        stahni stranku z wikti (testfile.retrieve("https://en.wiktionary.org/wiki/" + x.lower(), x +".html"))
-        stahni zvuk z googlu (testfile.retrieve("https://ssl.gstatic.com/dictionary/static/sounds/de/0/" + x.lower() + ".mp3", x +".mp3")
-            pokud neni, najdi zvuk z wiki (vyparsovat z  You can <a href="//upload.wikimedia.org/wikipedia/commons/a/a7/En-us-injury.ogg">download the clip</a>)
-                a stahni
-        vyparsuj ze stranky IPA (          <span class="IPA" lang="">/xxx/
-          </span>
-        pridej do vysledku radek obrazek; jmeno ; zvuk ; IPA;<pro bawn-jure>;<pro vase poznamky>
-        uloz do archivu
-uloz vysledek
-uklid
-
-kazdy field se da naplnit posloupnosti
-    stahni
-    najdi
-
-    obrazek a zvuk se navic musi nakopirovat do anki media folderu
-
-
-'''
 LOGFILE = 'import.log'
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(lineno)d: %(message)s', filename=LOGFILE, datefmt='%d.%m.%Y %H:%M:%S%p)')
@@ -151,8 +129,6 @@ def get_sound(adr, a_word, a_html_file):
     return '', ''
 
 
-
-
 def check_subdirs(a_dir):
     ''' otestuje, ze existuji pomocne podadresare v danem adresari, pripadne je vytvori '''
     for dir in [DIR_HTML, DIR_SOUNDS, DIR_DONE]:
@@ -219,32 +195,6 @@ def zpracuj(adr, a_picture, a_profile_path):
     else:
         logger.debug('not infinitive - word remains unaltered')
         cword = word
-    '''
-    img = '<img src="' + a_picture + '">'
-    logger.debug('img' + img)
-    sound, sound_filename = get_sound(adr, cword)
-    logger.debug('sound:' + sound)
-    pronunciation = get_pronunciation(adr, cword)
-    logger.debug('pronunciation:' + pronunciation)
-    sentence = get_sentence(adr, cword)
-    logger.debug('sentence:' + sentence)
-    result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
-    logger.debug('result' + result)
-
-    shutil.copy(os.path.join(adr, a_picture), a_profile_path)
-    logger.debug('zkopirovan obrazek do profilu')
-
-    logger.debug('zkopiruju ' + sound_filename)
-    if os.path.exists(sound_filename):
-        shutil.copy(sound_filename, a_profile_path)
-    else:
-        logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
-    done_path = os.path.join(adr, DIR_DONE, a_picture)
-    logger.debug('done:' + done_path)
-    shutil.move(os.path.join(adr, a_picture), done_path)
-
-    return result
-'''
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
 

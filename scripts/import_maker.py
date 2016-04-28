@@ -109,64 +109,52 @@ def stahni (a_co, a_kam):
     return True
 
 
-def najdi_adresu(adr, a_page, a_word, a_regexp):
-    ''' finds a link in a page using a regexp. Looks for exact word first and if the page is not found then tries a_word.lower as part of the address '''
-    address = a_page.rstrip('/') + '/' + a_word
-    local_file = os.path.join(adr, DIR_HTML, a_word + '_sound.html')
-    if not os.path.exists(local_file):
-        if not stahni(address, local_file):
-            logger.debug('nenasel adresu, zkusim lower')
-            if a_word == a_word.lower():
-                logger.debug('a word = a_word.lower() - neni co znovu hledat')
-            else:
-                address = a_page.rstrip('/') + '/' + a_word.lower()
-                logger.debug('adress %s' %address)
-                stahni(address, local_file)
+def get_html_file(adr, a_word):
+    '''
+    :param adr: adresar
+    :param a_word: slovo
+    :return: filename pro html stranku s popisem slova
+    '''
+    logger.debug('get_html_file(%s, %s)' %(adr, a_word))
+    result = os.path.join (adr, DIR_HTML, a_word + '.html')
+    logger.debug('result %s' % result)
+    return result
 
-    sound_address = find_text(local_file, a_regexp, None)
+def get_html_address(a_word):
+    '''
+    Zatim trivialni ale mozna nebude pro non ascii
 
-    if sound_address:
-        logger.debug('Found sound address - %s' % sound_address)
-        return sound_address
-    else:
-        logger.debug('Not found sound address')
-        return None
+    :param a_word: slovo
+    :return: adresa, na ktere hledat informace o slovu
+    '''
+    return 'http://www.dict.com/Anglicko-cesky/%s?' %a_word
+
+def get_real_address(a_address):
+    '''
+    :param a_address: relativni adresa nalezena ve strance
+    :return: full address of a sound
+    '''
+    return 'http://www.dict.com/data/%s' %a_address
 
 
-def get_sound(adr, a_word):
+def get_sound(adr, a_word, a_html_file):
     ''' najde pro dane slovo nahravku
-        nejdrive jiz existujici nahravku v adresari, jinak zkusi stahnout z googlu a pak z wiktionary
-        vrati tag pro pouziti v anki [sound:word.mp3]'''
+        nejdrive jiz existujici nahravku v adresari, jinak zkusi stahnout z dict.com
+        vrati tag pro pouziti v anki [sound:word.mp3] a jmeno souboru se zvukem'''
     logger.debug('get_sound:%s %s' %(adr ,a_word))
+    ''' na dict com zvuky v dict.com/data/ adresa ve strance - napr. http://www.dict.com/data/audio/en/006/en-006141.mp3 '''
+    sound_rel_address = find_text(a_html_file, "<span class='lex_ful_wsnd'>(.*?)</span>", '')
     sound_file =  os.path.join (adr, DIR_SOUNDS, a_word + '.mp3')
     logger.debug ('sound_file: %s' % sound_file)
-    sound_address = najdi_adresu(adr, 'http://dictionary.cambridge.org/us/dictionary/english/', a_word, 'data-src-mp3="([^"]+)"')
-    if stahni (sound_address, sound_file):
-        logger.debug('stahnul jsem z odjinud')
+    if stahni(get_real_address(sound_rel_address), sound_file):
+
+
         l_result = '[sound:%s.mp3]' % a_word
         logger.debug(l_result)
         return l_result, sound_file
+
     return '', ''
 
-def get_pronunciation(adr, a_word):
-    ''' najde pro dane slovo vyslovnost
-        zkusi v adresari najit stazenou stranku
-        z ni vyparsovat vyslovnost,
-        todo pripadne pak stahne patricnou stranku
-    '''
-    logger.debug('function get_pronunciation (%s)' %a_word)
-    pronunciation_file = os.path.join(adr, DIR_HTML, a_word + '.html')
-    logger.debug('pronunciation_file: %s' % pronunciation_file)
-    if stahni("https://en.wiktionary.org/wiki/" + a_word.lower(), pronunciation_file):
-        pronunciation = find_text(pronunciation_file, '<span class="IPA" [^>]+>/([^/]*)/</sp', '//')
-    else:
-        pronunciation = '//'
-
-    #nenasel jsem na wiki, zkusim cambridge
-    if pronunciation == '//':
-        if (stahni ('http://dictionary.cambridge.org/us/dictionary/english/%s' %a_word.lower(), pronunciation_file + '2')):
-            pronunciation = find_text(pronunciation_file + '2', '<span class="ipa">([^<]+)</span>', '//')
-    return pronunciation
 
 def get_sentence(adr, a_word):
     ''' najde pro dane slovo priklad ve vete '''
@@ -270,56 +258,38 @@ def zpracuj(adr, a_picture, a_profile_path):
     else:
         logger.debug('not infinitive - word remains unaltered')
         cword = word
-    '''
     img = '<img src="' + a_picture + '">'
     logger.debug('img' + img)
-    sound, sound_filename = get_sound(adr, cword)
-    logger.debug('sound:' + sound)
-    pronunciation = get_pronunciation(adr, cword)
-    logger.debug('pronunciation:' + pronunciation)
-    sentence = get_sentence(adr, cword)
-    logger.debug('sentence:' + sentence)
-    result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
-    logger.debug('result' + result)
 
-    shutil.copy(os.path.join(adr, a_picture), a_profile_path)
-    logger.debug('zkopirovan obrazek do profilu')
+    html_file =   get_html_file(adr, cword)
+    if stahni(get_html_address(cword), html_file):
+        logger.debug('nasel jsem stranku pro dane slovo')
+        sound, sound_filename = get_sound(adr, cword, html_file)
+        logger.debug('sound:' + sound)
+        pronunciation = find_text(html_file, "<span class='lex_ful_pron'>(.*?)</span>", '//')
+        logger.debug('pronunciation:' + pronunciation)
 
-    logger.debug('zkopiruju ' + sound_filename)
-    if os.path.exists(sound_filename):
-        shutil.copy(sound_filename, a_profile_path)
-    else:
-        logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
-    done_path = os.path.join(adr, DIR_DONE, a_picture)
-    logger.debug('done:' + done_path)
-    shutil.move(os.path.join(adr, a_picture), done_path)
+        sentence = get_sentence(adr, cword)
+        logger.debug('sentence:' + sentence)
 
-    return result
-'''
-    img = '<img src="' + a_picture + '">'
-    logger.debug('img' + img)
-    sound, sound_filename = get_sound(adr, cword)
-    logger.debug('sound:' + sound)
-    pronunciation = get_pronunciation(adr, cword)
-    logger.debug('pronunciation:' + pronunciation)
-    sentence = get_sentence(adr, cword)
-    logger.debug('sentence:' + sentence)
-    result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
-    logger.debug('result' + result)
+        result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + sentence
+        logger.debug('result' + result)
 
-    shutil.copy(os.path.join(adr, a_picture), a_profile_path)
-    logger.debug('zkopirovan obrazek do profilu')
+        shutil.copy(os.path.join(adr, a_picture), a_profile_path)
+        logger.debug('zkopirovan obrazek do profilu')
 
-    logger.debug('zkopiruju ' + sound_filename)
-    if os.path.exists(sound_filename):
-        shutil.copy(sound_filename, a_profile_path)
-    else:
-        logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
-    done_path = os.path.join(adr, DIR_DONE, a_picture)
-    logger.debug('done:' + done_path)
-    shutil.move(os.path.join(adr, a_picture), done_path)
+        logger.debug('zkopiruju ' + sound_filename)
+        if os.path.exists(sound_filename):
+            shutil.copy(sound_filename, a_profile_path)
+        else:
+            logger.debug('nepodarilo se stahnout sound file neni jej odkud kopirovat')
+        done_path = os.path.join(adr, DIR_DONE, a_picture)
+        logger.debug('done:' + done_path)
+        shutil.move(os.path.join(adr, a_picture), done_path)
 
-    return result
+        return result
+    logger.debug('nepodarilo se najit ve slovniku')
+    return None
 
 
 def zip_log(args, profile_path):
