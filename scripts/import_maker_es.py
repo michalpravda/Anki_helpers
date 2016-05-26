@@ -102,7 +102,7 @@ def get_html_address(a_word):
     :param a_word: slovo
     :return: adresa, na ktere hledat informace o slovu
     '''
-    return 'http://www.dict.com/Anglicko-cesky/%s?' %a_word
+    return 'http://www.dict.com/Spanelsko-cesky/%s?' %a_word
 
 def get_real_address(a_address):
     '''
@@ -141,34 +141,36 @@ def to_number(a_word):
     :return: a word for number       - four
     '''
     switcher = {
-        "0": "zero",
-        "1": "one",
-        "2": "two",
-        "3": "three",
-        "4": "four",
-        "5": "five",
-        "6": "six",
-        "7": "seven",
-        "8": "eight",
-        "9": "nine",
-        "10": "ten",
-        "11": "eleven",
-        "12": "twelve",
-        "13": "thirteen",
-        "14": "fourteen",
-        "15": "fifteen",
-        "16": "sixteen",
-        "17": "seventeen",
-        "18": "eightteen",
-        "19": "nineteen",
-        "20": "twenty",
-        "30": "thirty",
-        "40": "forty",
-        "50": "fifty",
-        "60": "sixty",
-        "70": "seventy",
-        "80": "eighty",
-        "90": "ninety",
+        "0": "cero",
+        "1": "uno",
+        "2": "dos",
+        "3": "tres",
+        "4": "cuatro",
+        "5": "cinco",
+        "6": "seis",
+        "7": "siete",
+        "8": "ocho",
+        "9": "nueve",
+        "10": "diez",
+        "11": "once",
+        "12": "doce",
+        "13": "trece",
+        "14": "catorce",
+        "15": "quince",
+        "16": "dieciséis",
+        "17": "diecisiete",
+        "18": "dieciocho",
+        "19": "diecinueve",
+        "20": "veinte",
+        "21": "veintiuno",
+        "22": "veintidós",
+        "30": "treinta",
+        "40": "cuarenta",
+        "50": "cincuenta",
+        "60": "sesenta",
+        "70": "setenta",
+        "80": "ochenta",
+        "90": "noventa",
         "100": "hundred",
     }
     return switcher.get(a_word, a_word)
