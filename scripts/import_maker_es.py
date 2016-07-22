@@ -1,4 +1,4 @@
-# coding=ISO-8859-2
+# coding=windows-1250
 
 import re
 import os
@@ -11,6 +11,8 @@ import zipfile
 from datetime import datetime
 import htmlentitydefs
 from os.path import expanduser
+import unicodedata
+
 
 DIR_HTML = 'html'
 DIR_SOUNDS = 'sounds'
@@ -19,6 +21,12 @@ DIR_DONE = 'done'
 '''
 Takes all picture files from a given directory and for each of them then downloads a sound and several info from dict.com. Prepares a txt file with description and filenames for Anki to import.
 '''
+
+def remove_accents(input_str):
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    only_ascii = nfkd_form.encode('ASCII', 'ignore')
+    return only_ascii
+
 
 userHomeDir = expanduser("~")    #c:\users\majkl
 ankiDir = os.path.join(userHomeDir, 'Documents', 'Anki')  #c:\users\majkl\Documents\anki
@@ -116,7 +124,7 @@ def get_html_file(adr, a_word):
     :return: filename pro html stranku s popisem slova
     '''
     logger.debug('get_html_file(%s, %s)' %(adr, a_word))
-    result = os.path.join (adr, DIR_HTML, a_word + '.html')
+    result = os.path.join (adr, DIR_HTML, remove_accents(a_word) + '.html')
     logger.debug('result %s' % result)
     return result
 
@@ -127,7 +135,7 @@ def get_html_address(a_word):
     :param a_word: slovo
     :return: adresa, na ktere hledat informace o slovu
     '''
-    return 'http://www.dict.com/Spanelsko-cesky/%s?' %a_word
+    return 'http://www.dict.com/Spanelsko-cesky/%s?' %remove_accents(a_word)
 
 def get_real_address(a_address):
     '''
@@ -144,7 +152,7 @@ def get_sound(adr, a_word, a_html_file):
     logger.debug('get_sound:%s %s' %(adr ,a_word))
     ''' na dict com zvuky v dict.com/data/ adresa ve strance - napr. http://www.dict.com/data/audio/en/006/en-006141.mp3 '''
     sound_rel_address = find_text(a_html_file, "<span class='lex_ful_wsnd'>(.*?)</span>", '')
-    sound_file =  os.path.join (adr, DIR_SOUNDS, a_word + '.mp3')
+    sound_file =  (os.path.join (adr, DIR_SOUNDS, a_word + '.mp3'))
     logger.debug ('sound_file: %s' % sound_file)
     if stahni(get_real_address(sound_rel_address), sound_file):
         l_result = '[sound:%s.mp3]' % a_word
@@ -210,11 +218,13 @@ def zpracuj(adr, a_picture, a_profile_path):
     # word; picture; sound; pronunciation; example sentence
     # hello; <img src="hello.jpg">; [sound:hello.mp3]; /h??l??/; Hello world!
     logger.debug('function zpracuj: ' + a_picture)
-
+    # u_picture = a_picture.decode(sys.getfilesystemencoding())
+    # logger.debug('u_picture:' + u_picture)
     word = "".join(a_picture.split('.')[0:-1])
+    # u_word = word.decode(sys.getfilesystemencoding())
     word = to_number(word)
 
-    logger.debug('word ' + str(word))
+    logger.debug('word ' + word)
     if word.startswith('to '):
         logger.debug('infinitive - cut "to "')
         cword=word[3:]
@@ -236,8 +246,7 @@ def zpracuj(adr, a_picture, a_profile_path):
         logger.debug('pronunciation unescaped:' + pronunciation)
 
         result = word + ';' + img + ';' + sound + ';' + pronunciation + ';'
-        logger.debug('result' + result)
-
+        logger.debug('result: ' + result)
         shutil.copy(os.path.join(adr, a_picture), a_profile_path)
         logger.debug('zkopirovan obrazek do profilu')
 
@@ -255,7 +264,7 @@ def zpracuj(adr, a_picture, a_profile_path):
     return None
 
 def zip_log(args, profile_path):
-    '''zazipuje log a nahraje jej do adresare anki, odtamtud se synchronizaci dostane ke mne pì pøi ka¾dém pokusu'''
+    '''zazipuje log a nahraje jej do adresare anki, odtamtud se synchronizaci dostane ke mne pì pøi každém pokusu'''
     if args.zip:
         logger.debug('zipuju logfile - %s' %LOGFILE)
 
@@ -298,7 +307,7 @@ def main(argv=None):
     profile_path = os.path.join(ankiDir, args.profil, 'collection.media')
     logger.debug('profile_path:' + profile_path)
     with open(adr + '/import.txt', 'w') as wr:
-        for s in os.listdir(adr):
+        for s in os.listdir(adr.decode()):
             logger.debug('filename:' + s)
             if get_extension(s) in ['jpg', 'gif', 'png']:
                 try:
