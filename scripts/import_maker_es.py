@@ -209,6 +209,19 @@ def to_number(a_word):
     return switcher.get(a_word, a_word)
 
 
+def get_local_word(a_word):
+    '''
+    Pokud je ve slouv podtrzitko, tak cast za podtritkem bere ajko zamýšlený èecký pøeklad
+    :param a_word:
+    :return:
+    '''
+    if a_word.find('_') == -1:
+        return a_word, ''
+    else:
+        expr = a_word.split('_')
+        return expr[0], expr[1]
+
+
 def zpracuj(adr, a_picture, a_profile_path):
     ''' stahne k danemu obrazku co nejvice doplnujicich informaci (zvuk, vyslovnost),
     zkopiruje media do anki folderu
@@ -222,6 +235,9 @@ def zpracuj(adr, a_picture, a_profile_path):
     # logger.debug('u_picture:' + u_picture)
     word = "".join(a_picture.split('.')[0:-1])
     # u_word = word.decode(sys.getfilesystemencoding())
+
+    word, czech_word = get_local_word(word)
+
     word = to_number(word)
 
     logger.debug('word ' + word)
@@ -245,7 +261,7 @@ def zpracuj(adr, a_picture, a_profile_path):
         pronunciation = unescape(pronunciation)
         logger.debug('pronunciation unescaped:' + pronunciation)
 
-        result = word + ';' + img + ';' + sound + ';' + pronunciation + ';'
+        result = word + ';' + img + ';' + sound + ';' + pronunciation + ';' + czech_word + ';'
         logger.debug('result: ' + result)
         shutil.copy(os.path.join(adr, a_picture), a_profile_path)
         logger.debug('zkopirovan obrazek do profilu')
