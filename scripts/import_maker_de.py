@@ -90,7 +90,17 @@ def find_text(a_filename, a_regexp, a_not_found):
         fd.close()
     return a_not_found
 
-
+def get_local_word(a_word):
+    '''
+    Pokud je ve slouv podtrzitko, tak cast za podtritkem bere ajko zamýšlený čecký překlad
+    :param a_word:
+    :return:
+    '''
+    if a_word.find('_') == -1:
+        return a_word, ''
+    else:
+        expr = a_word.split('_')
+        return expr[0], expr[1]
 
 def get_extension(a_filename):
     ''' ze jmena souboru odvodi priponu'''
@@ -246,6 +256,8 @@ def zpracuj(adr, a_picture):
     logger.debug('function zpracuj: ' + a_picture)
     sound = ''
     word = "".join(a_picture.split('.')[0:-1])
+    word, czech_word = get_local_word(word)
+
     u_word = word.decode(sys.getfilesystemencoding())
     logger.debug('word ' + str(word))
     logger.debug('u_word' + u_word)
@@ -333,6 +345,8 @@ def zpracuj(adr, a_picture):
     logger.debug('tvorim result 3')
     result = result + pronunciation.decode('utf-8') + ';' #+ sentence
     logger.debug('tvorim result 4')
+
+    result= result + czech_word.decode(sys.getfilesystemencoding()) + ';'
 
     result= result.encode('utf-8')
     logger.debug('result' + result)
