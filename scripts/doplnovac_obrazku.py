@@ -48,7 +48,6 @@ else:
     zdroj2 = 'd:\\majkl\\fluent forever\\spanelstina\\CZ - Španìlština pro samouky4.txt'
 
 
-
 pole = {}
 with open (zdroj1, 'r') as top5000:
     for f in top5000:
@@ -57,7 +56,7 @@ with open (zdroj1, 'r') as top5000:
         polozky = funi.split('\t')
 
         logger.debug(polozky[0])
-        index = polozky[0].split(' ')[0]
+        index = polozky[0].split(' ')[0].strip(',')
         logger.debug(index)
 
         pole[index] = polozky
