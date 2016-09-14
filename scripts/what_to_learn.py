@@ -1,7 +1,7 @@
 
 ''' Opens a file representing known (or queued to learn) words and a file containing arbitrary words. Produces a file with words to be learned.
     Intended usage is to gen known words by exporting them from Anki, get questioned words from a text (scanned book page, a page from Internet etc.)
-    and get as a result list of words which are unknown at the moment a should be queued for learning.
+    and get as a result list of words which are unknown at the moment and should be queued for learning.
 
     Output file is by default not sorted.
     Each word found is presented on one line.
@@ -51,8 +51,9 @@ def stahni (a_co, a_kam):
         logger.debug('stahnu soubor')
         try:
             testfile.retrieve(a_co, a_kam)
-        except:
+        except Exception, e:
             logger.warning('nenalezen soubor na adrese %s' % a_co)
+            logger.warning(str(e))
             return False
     return True
 
@@ -65,11 +66,14 @@ def process_command_line(argv):
     parser.add_argument("-k", "--known", help="file (usually exported from Anki) representing known words")
     parser.add_argument("-i", "--input", help="file to be tested - the source of possible new words")
     parser.add_argument("-o", "--output", help="file with results - the words to be learned")
+
     parser.add_argument("-r", "--ordered", help="Output file is alphabetically sorted", action='store_true')
     parser.add_argument("-g", "--ignoreCase", help="Case insensitive", action='store_true')
     parser.add_argument("--debug", help='show debug messages', action='store_true')
     parser.add_argument("-p", "--profil", help="Anki profile to be used (pictures and sound will be copied to it's media folder")
 
+    parser.add_argument("--no_check", help="do not search the words on the web", action='store_true')
+    parser.add_argument("--maintain_order", help="The order of the appearance stays the same (slower)", action='store_true')
     args = parser.parse_args()
 
     logger.debug('vstupni argumenty')
@@ -100,17 +104,33 @@ def check_subdirs(a_dir):
             os.mkdir(os.path.join(a_dir, dir))
 
 
-def get_words_from_file(a_file, a_alllower):
+def get_words_from_file(a_args, a_file, a_alllower):
     '''
-    Reads a file, all it's word puts into a set
+    Reads a file, all it's distinct words puts into a list
     :param a_file:
-    :return: a set with all words in a file
+    :return: a list with all distinct words in a file
     '''
-    words = set()
-    with open(a_file) as f:
-        for line in f:
-            words |= set(get_words(line, a_alllower))
-    f.close()
+    if a_args.maintain_order:
+        words = []
+        with open(a_file) as f:
+            for line in f:
+                words_on_line = get_words(line, a_alllower)
+                for word in words_on_line:
+                    if word not in words:
+                        words.append(word)
+        f.close()
+
+        with open("d:\majkl\fluent forever\Julinka\what_to_learn.log2", 'w') as f:
+            for word in words:
+                f.write('%s\n'%word)
+        f.close()
+    else:
+        words = set()
+        with open(a_file) as f:
+            for line in f:
+                words |= set(get_words(line, a_alllower))
+        f.close()
+        words = list(words)
     logger.debug('nalezeno %d slov' % len(words))
     return words
 
@@ -160,7 +180,7 @@ def getCanonical(aWord):
         logger.debug('real_address:%s' %real_address)
         if real_address!=original_address:
             logger.debug('probehlo presmerovani na zakladni tvar')
-            canon = find_text(filename, 'definition of (.*?) by merriam-webster')
+            canon = real_address.split('/')[-1]
             logger.debug('returns:%s' %canon)
             return canon.lower()
         else:
@@ -195,14 +215,20 @@ def main(argv=None):
     else:
         logger.setLevel(logging.INFO)
 
-    words_input = get_words_from_file(args.known, args.ignoreCase)
-
-    words_test = get_words_from_file(args.input, args.ignoreCase)
+    words_known = get_words_from_file(args, args.known, args.ignoreCase)
+    logger.debug('known words %d' %len(words_known))
+    words_test = get_words_from_file(args, args.input, args.ignoreCase)
+    logger.debug('test words %d' %len(words_test))
 
     check_subdirs('.')
 
 
-    word_tmp = words_test.difference(words_input)
+    # word_tmp = words_test.difference(words_known)
+
+    word_tmp = []
+    for word in words_test:
+        if word not in words_known:
+            word_tmp.append(word)
     logger.debug('nalezeno %d novych slov' %len(word_tmp))
 
     if args.ordered:
@@ -212,11 +238,14 @@ def main(argv=None):
 
     with open (args.output, 'w') as out:
         for word in words_output:
-            canon = getCanonical(word)
-            if canon.lower() == word.lower():
+            if args.no_check:
                 out.write(word + '\n')
             else:
-                out.write('%s (%s)\n'%(word, canon))
+                canon = getCanonical(word)
+                if canon.lower() == word.lower():
+                    out.write(word + '\n')
+                else:
+                    out.write('%s (%s)\n'%(word, canon))
     out.close()
     logger.debug('ulozeno do file')
 
